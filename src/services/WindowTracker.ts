@@ -22,8 +22,8 @@ export class WindowTracker {
 
     private async checkPermissions(): Promise<boolean> {
         if (process.platform === 'darwin') {
-            // Force permission check for Accessibility
-            const hasAccessibility = systemPreferences.isTrusted('accessibility');
+            // Check Accessibility permission
+            const hasAccessibility = systemPreferences.getAuthorizationStatus('accessibility') === 'authorized';
             console.log('Has accessibility permission:', hasAccessibility);
 
             // Request screen recording permission if needed

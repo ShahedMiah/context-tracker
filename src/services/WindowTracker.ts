@@ -3,7 +3,7 @@ import { DatabaseService } from './Database';
 
 export class WindowTracker {
   private database: DatabaseService;
-  private trackingInterval: NodeJS.Timer | null = null;
+  private trackingInterval: NodeJS.Timeout | null = null;
   private lastActiveWindow: string | null = null;
   private isTracking: boolean = false;
 
@@ -43,9 +43,8 @@ export class WindowTracker {
         await this.database.recordWindowSwitch({
           timestamp: timestamp,
           windowTitle: title,
-          // Add more metadata as needed
           processName: app.getName(),
-          display: displays[0].id // Primary display ID
+          display: displays[0].id
         });
         
         this.lastActiveWindow = title;

@@ -1,5 +1,17 @@
 import { ipcRenderer } from 'electron';
-import { Chart, ChartConfiguration } from 'chart.js';
+import { Chart, ChartConfiguration } from 'chart.js/auto';
+
+interface TimeSpent {
+    category: string;
+    totalMinutes: number;
+    percentage: number;
+}
+
+interface RecentWindow {
+    title: string;
+    category: string;
+    timestamp: string;
+}
 
 class StatisticsView {
     private categoryChart: Chart | null = null;
@@ -69,20 +81,20 @@ class StatisticsView {
         const endDate = new Date();
         const startDate = new Date(endDate.getTime() - (this.timeRange * 60 * 60 * 1000));
         
-        const timeSpent = await ipcRenderer.invoke('get-time-spent', startDate, endDate);
+        const timeSpent = await ipcRenderer.invoke('get-time-spent', startDate, endDate) as TimeSpent[];
         
-        this.categoryChart.data.labels = timeSpent.map(t => `${t.category} (${t.percentage}%)`);
-        this.categoryChart.data.datasets[0].data = timeSpent.map(t => t.totalMinutes);
+        this.categoryChart.data.labels = timeSpent.map((t: TimeSpent) => `${t.category} (${t.percentage}%)`);
+        this.categoryChart.data.datasets[0].data = timeSpent.map((t: TimeSpent) => t.totalMinutes);
         this.categoryChart.update();
     }
 
     private async updateRecentWindows() {
-        const recentWindows = await ipcRenderer.invoke('get-window-switches', 10);
+        const recentWindows = await ipcRenderer.invoke('get-window-switches', 10) as RecentWindow[];
         const tbody = document.querySelector('#recentWindowsTable tbody');
         if (!tbody) return;
 
         tbody.innerHTML = '';
-        recentWindows.forEach((window: any) => {
+        recentWindows.forEach((window: RecentWindow) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${new Date(window.timestamp).toLocaleTimeString()}</td>

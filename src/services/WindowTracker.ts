@@ -1,4 +1,4 @@
-import { app, screen } from 'electron';
+import { app, screen, systemPreferences } from 'electron';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { DatabaseService } from './Database';
@@ -20,9 +20,36 @@ export class WindowTracker {
         this.categorization = new ContextCategorizationService();
     }
 
+    private async checkPermissions(): Promise<boolean> {
+        if (process.platform === 'darwin') {
+            // Force permission check for Accessibility
+            const hasAccessibility = systemPreferences.isTrusted('accessibility');
+            console.log('Has accessibility permission:', hasAccessibility);
+
+            // Request screen recording permission if needed
+            try {
+                const script = 'tell application "System Events" to get name of first application process whose frontmost is true';
+                await execAsync(`osascript -e '${script}'`);
+                console.log('Successfully executed AppleScript');
+                return true;
+            } catch (error) {
+                console.error('Permission error:', error);
+                return false;
+            }
+        }
+        return true;
+    }
+
     private async getNativeWindowTitle(): Promise<string> {
         try {
             if (process.platform === 'darwin') {
+                // Check permissions first
+                const hasPermissions = await this.checkPermissions();
+                if (!hasPermissions) {
+                    console.log('Missing required permissions');
+                    return 'Permissions required';
+                }
+
                 // macOS
                 const script = `
                     tell application "System Events"
@@ -65,10 +92,18 @@ export class WindowTracker {
         }
     }
 
-    public startTracking(intervalMs: number = 1000) {
+    public async startTracking(intervalMs: number = 1000) {
         if (this.isTracking) return;
         
         console.log('Starting window tracking...');
+
+        // Check permissions before starting
+        const hasPermissions = await this.checkPermissions();
+        if (!hasPermissions) {
+            console.log('Cannot start tracking - missing permissions');
+            return;
+        }
+
         this.isTracking = true;
         this.trackingInterval = setInterval(() => this.checkActiveWindow(), intervalMs);
     }

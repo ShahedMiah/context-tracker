@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <circle cx="256" cy="256" r="256" fill="#2DD4BF"/>
+  <!-- Overlapping squares with gradient -->
+  <rect x="146" y="146" width="140" height="140" rx="20" 
+        fill="#F8FAFC" fill-opacity="0.9"/>
+  <rect x="226" y="226" width="140" height="140" rx="20" 
+        fill="#F8FAFC" fill-opacity="0.8"/>
+  <!-- Connecting lines -->
+  <path d="M186 186L306 306M306 186L186 306" 
+        stroke="#2DD4BF" stroke-width="12" stroke-linecap="round"/>
+</svg>

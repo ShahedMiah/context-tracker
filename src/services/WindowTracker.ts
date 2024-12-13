@@ -20,7 +20,7 @@ export class WindowTracker {
         this.categorization = new ContextCategorizationService();
     }
 
-    private async getCurrentWindowTitle(): Promise<string> {
+    private async getNativeWindowTitle(): Promise<string> {
         try {
             if (process.platform === 'darwin') {
                 // macOS
@@ -84,7 +84,7 @@ export class WindowTracker {
 
     private async checkActiveWindow() {
         try {
-            const title = await this.getCurrentWindowTitle();
+            const title = await this.getNativeWindowTitle();
             this.currentWindowTitle = title;
             
             // Categorize the window
@@ -118,7 +118,7 @@ export class WindowTracker {
         return this.isTracking;
     }
 
-    public getCurrentWindowTitle(): string {
+    public getWindowTitle(): string {
         return this.currentWindowTitle;
     }
 

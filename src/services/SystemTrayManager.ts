@@ -82,7 +82,7 @@ export class SystemTrayManager {
         const currentCategoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
 
         if (currentWindowItem) {
-            const currentTitle = this.windowTracker.getCurrentWindowTitle();
+            const currentTitle = this.windowTracker.getWindowTitle();
             currentWindowItem.label = `Current: ${currentTitle || 'Unknown'}`;
         }
 

@@ -6,6 +6,7 @@ export class WindowTracker {
   private trackingInterval: NodeJS.Timeout | null = null;
   private lastActiveWindow: string | null = null;
   private isTracking: boolean = false;
+  private currentWindowTitle: string = 'Unknown';
 
   constructor(database: DatabaseService) {
     this.database = database;
@@ -37,6 +38,7 @@ export class WindowTracker {
       
       // Get the current window title
       const title = activeWindow?.getTitle() || 'Unknown';
+      this.currentWindowTitle = title;
       
       if (title !== this.lastActiveWindow) {
         // Window switch detected
@@ -56,5 +58,9 @@ export class WindowTracker {
 
   public isCurrentlyTracking(): boolean {
     return this.isTracking;
+  }
+
+  public getCurrentWindowTitle(): string {
+    return this.currentWindowTitle;
   }
 }

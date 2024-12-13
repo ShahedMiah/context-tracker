@@ -13,17 +13,30 @@ if (process.platform === 'darwin' && typeof app.setSecureKeyboardEntryEnabled ==
   app.applicationSupportsSecureRestorableState = true;
 }
 
+console.log('App starting...');
+
 app.whenReady().then(() => {
-  // Initialize database
-  database = new DatabaseService();
+  console.log('App is ready');
   
-  // Initialize window tracker
-  windowTracker = new WindowTracker(database);
-  windowTracker.startTracking();
+  try {
+    // Initialize database
+    console.log('Initializing database...');
+    database = new DatabaseService();
+    
+    // Initialize window tracker
+    console.log('Initializing window tracker...');
+    windowTracker = new WindowTracker(database);
+    windowTracker.startTracking();
 
-  // Initialize system tray with both windowTracker and database
-  systemTray = new SystemTrayManager(windowTracker, database);
+    // Initialize system tray with both windowTracker and database
+    console.log('Initializing system tray...');
+    systemTray = new SystemTrayManager(windowTracker, database);
 
+    console.log('App initialization complete');
+  } catch (error) {
+    console.error('Error during initialization:', error);
+  }
+  
   // Keep the app running even when all windows are closed
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -32,8 +45,18 @@ app.whenReady().then(() => {
   });
 });
 
+// Log any unhandled errors
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled rejection:', error);
+});
+
 // Ensure proper cleanup
 app.on('before-quit', () => {
+  console.log('App quitting...');
   if (systemTray) {
     systemTray.destroy();
   }

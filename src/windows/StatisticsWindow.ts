@@ -12,10 +12,12 @@ export class StatisticsWindow {
     }
 
     private setupIpcHandlers() {
-        // Add IPC handlers for communicating with the window
         ipcMain.handle('get-window-switches', (event, limit) => {
-            // We'll implement this in the Database service
             return this.database.getRecentWindows(limit || 10);
+        });
+
+        ipcMain.handle('get-time-spent', (event, startDate, endDate) => {
+            return this.database.getTimeSpentByCategory(new Date(startDate), new Date(endDate));
         });
     }
 
@@ -35,7 +37,18 @@ export class StatisticsWindow {
             title: 'Context Tracker - Statistics'
         });
 
-        this.window.loadFile(path.join(__dirname, '../../views/statistics.html'));
+        const htmlPath = path.join(__dirname, '../views/statistics.html');
+        console.log('Loading HTML from:', htmlPath);
+        
+        this.window.loadFile(htmlPath);
+
+        // Open DevTools for debugging
+        this.window.webContents.openDevTools();
+
+        // Log any loading errors
+        this.window.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+            console.error('Failed to load:', errorCode, errorDescription);
+        });
 
         this.window.on('closed', () => {
             this.window = null;

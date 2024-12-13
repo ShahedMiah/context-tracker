@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import { join } from 'path';
 import { app } from 'electron';
 
@@ -15,12 +15,12 @@ interface ContextSwitch {
   timestamp: number;
 }
 
-export class Database {
-  private db: Database.Database;
+export class DatabaseService {
+  private db: BetterSqlite3.Database;
 
   constructor() {
     const dbPath = join(app.getPath('userData'), 'context-tracker.db');
-    this.db = new Database(dbPath);
+    this.db = new BetterSqlite3(dbPath);
     this.initialize();
   }
 
@@ -54,7 +54,7 @@ export class Database {
     `);
   }
 
-  async logSession(session: Session) {
+  logSession(session: Session): void {
     const stmt = this.db.prepare(`
       INSERT INTO sessions (app_name, start_time, end_time, duration)
       VALUES (@appName, @startTime, @endTime, @duration)
@@ -63,7 +63,7 @@ export class Database {
     stmt.run(session);
   }
 
-  async logContextSwitch(contextSwitch: ContextSwitch) {
+  logContextSwitch(contextSwitch: ContextSwitch): void {
     const stmt = this.db.prepare(`
       INSERT INTO context_switches (from_app, to_app, timestamp)
       VALUES (@fromApp, @toApp, @timestamp)
@@ -72,7 +72,7 @@ export class Database {
     stmt.run(contextSwitch);
   }
 
-  getRecentSessions(limit: number = 10) {
+  getRecentSessions(limit: number = 10): any[] {
     return this.db.prepare(`
       SELECT * FROM sessions
       ORDER BY start_time DESC
@@ -80,7 +80,7 @@ export class Database {
     `).all(limit);
   }
 
-  getContextSwitchFrequency(timespan: number) {
+  getContextSwitchFrequency(timespan: number): { switches: number } {
     const since = Date.now() - timespan;
     return this.db.prepare(`
       SELECT COUNT(*) as switches
@@ -89,7 +89,7 @@ export class Database {
     `).get(since);
   }
 
-  close() {
+  close(): void {
     this.db.close();
   }
 }

@@ -1,15 +1,19 @@
 import { Tray, Menu, app } from 'electron';
 import path from 'path';
 import { WindowTracker } from './WindowTracker';
+import { StatisticsWindow } from '../windows/StatisticsWindow';
+import { DatabaseService } from './Database';
 
 export class SystemTrayManager {
     private tray: Tray | null = null;
     private windowTracker: WindowTracker;
     private updateInterval: NodeJS.Timeout | null = null;
-    private currentContextMenu: Menu | null = null;  // Add this to track the current menu
+    private currentContextMenu: Menu | null = null;
+    private statisticsWindow: StatisticsWindow;
 
-    constructor(windowTracker: WindowTracker) {
+    constructor(windowTracker: WindowTracker, database: DatabaseService) {
         this.windowTracker = windowTracker;
+        this.statisticsWindow = new StatisticsWindow(database);
         this.initializeTray();
         this.startStatsUpdate();
     }
@@ -30,6 +34,11 @@ export class SystemTrayManager {
                 enabled: false,
                 id: 'currentWindow'
             },
+            {
+                label: 'Current Category',
+                enabled: false,
+                id: 'currentCategory'
+            },
             { type: 'separator' },
             {
                 label: this.windowTracker.isCurrentlyTracking() ? 'Pause Tracking' : 'Resume Tracking',
@@ -46,8 +55,7 @@ export class SystemTrayManager {
             {
                 label: 'Show Statistics',
                 click: () => {
-                    // We'll implement this later
-                    console.log('Show statistics clicked');
+                    this.statisticsWindow.show();
                 }
             },
             { type: 'separator' },
@@ -71,9 +79,16 @@ export class SystemTrayManager {
         if (!this.tray || !this.currentContextMenu) return;
 
         const currentWindowItem = this.currentContextMenu.getMenuItemById('currentWindow');
+        const currentCategoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
+
         if (currentWindowItem) {
             const currentTitle = this.windowTracker.getCurrentWindowTitle();
             currentWindowItem.label = `Current: ${currentTitle || 'Unknown'}`;
+        }
+
+        if (currentCategoryItem) {
+            const currentCategory = this.windowTracker.getCurrentCategory();
+            currentCategoryItem.label = `Category: ${currentCategory || 'Other'}`;
         }
 
         this.tray.setContextMenu(this.currentContextMenu);

@@ -6,6 +6,7 @@ export class SystemTrayManager {
     private tray: Tray | null = null;
     private windowTracker: WindowTracker;
     private updateInterval: NodeJS.Timeout | null = null;
+    private currentContextMenu: Menu | null = null;  // Add this to track the current menu
 
     constructor(windowTracker: WindowTracker) {
         this.windowTracker = windowTracker;
@@ -14,10 +15,8 @@ export class SystemTrayManager {
     }
 
     private initializeTray() {
-        // For now, we'll use a simple 16x16 icon - we'll create this next
         const iconPath = path.join(__dirname, '../../resources/tray-icon.png');
         this.tray = new Tray(iconPath);
-        
         this.tray.setToolTip('Context Tracker');
         this.updateContextMenu();
     }
@@ -25,7 +24,7 @@ export class SystemTrayManager {
     private updateContextMenu() {
         if (!this.tray) return;
 
-        const contextMenu = Menu.buildFromTemplate([
+        this.currentContextMenu = Menu.buildFromTemplate([
             {
                 label: 'Current Window',
                 enabled: false,
@@ -58,7 +57,7 @@ export class SystemTrayManager {
             }
         ]);
 
-        this.tray.setContextMenu(contextMenu);
+        this.tray.setContextMenu(this.currentContextMenu);
     }
 
     private startStatsUpdate() {
@@ -69,17 +68,15 @@ export class SystemTrayManager {
     }
 
     private updateCurrentWindow() {
-        if (!this.tray) return;
+        if (!this.tray || !this.currentContextMenu) return;
 
-        const contextMenu = this.tray.contextMenu;
-        if (!contextMenu) return;
-
-        const currentWindowItem = contextMenu.getMenuItemById('currentWindow');
+        const currentWindowItem = this.currentContextMenu.getMenuItemById('currentWindow');
         if (currentWindowItem) {
-            currentWindowItem.label = `Current: ${this.windowTracker.getCurrentWindowTitle()}`;
+            const currentTitle = this.windowTracker.getCurrentWindowTitle();
+            currentWindowItem.label = `Current: ${currentTitle || 'Unknown'}`;
         }
 
-        this.tray.setContextMenu(contextMenu);
+        this.tray.setContextMenu(this.currentContextMenu);
     }
 
     public destroy() {

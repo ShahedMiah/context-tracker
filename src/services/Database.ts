@@ -1,4 +1,7 @@
 import Database from 'better-sqlite3';
+import { app } from 'electron';
+import path from 'path';
+import fs from 'fs';
 
 interface WindowSwitchRecord {
     timestamp: Date;
@@ -8,24 +11,30 @@ interface WindowSwitchRecord {
     category?: string;
 }
 
-interface TimeSpent {
-    category: string;
-    totalMinutes: number;
-    percentage: number;
-}
-
-interface RecentWindow {
-    title: string;
-    category: string;
-    timestamp: string;
-}
-
 export class DatabaseService {
     private db: Database.Database;
+    private dbPath: string;
 
     constructor() {
-        this.db = new Database('context-tracker.db');
-        this.initializeDatabase();
+        // Use the app's user data directory
+        const userDataPath = app.getPath('userData');
+        this.dbPath = path.join(userDataPath, 'context-tracker.db');
+
+        // Ensure the directory exists
+        const dir = path.dirname(this.dbPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        console.log('Database path:', this.dbPath);
+
+        try {
+            this.db = new Database(this.dbPath);
+            this.initializeDatabase();
+        } catch (error) {
+            console.error('Failed to initialize database:', error);
+            throw error;
+        }
     }
 
     private initializeDatabase() {
@@ -65,63 +74,13 @@ export class DatabaseService {
         );
     }
 
-    public getTimeSpentByCategory(startDate: Date, endDate: Date): TimeSpent[] {
-        const query = `
-            WITH time_diffs AS (
-                SELECT 
-                    category,
-                    ROUND(
-                        SUM(
-                            CASE 
-                                WHEN lead_timestamp IS NULL THEN 
-                                    JULIANDAY(?) - JULIANDAY(timestamp)
-                                ELSE 
-                                    JULIANDAY(lead_timestamp) - JULIANDAY(timestamp)
-                            END * 24 * 60
-                        )
-                    ) as minutes
-                FROM (
-                    SELECT 
-                        category,
-                        timestamp,
-                        LEAD(timestamp) OVER (ORDER BY timestamp) as lead_timestamp
-                    FROM window_switches
-                    WHERE timestamp BETWEEN ? AND ?
-                )
-                GROUP BY category
-            )
-            SELECT 
-                category,
-                minutes as totalMinutes,
-                ROUND(CAST(minutes AS FLOAT) * 100 / SUM(minutes) OVER (), 2) as percentage
-            FROM time_diffs
-            ORDER BY minutes DESC;
-        `;
-
-        const stmt = this.db.prepare(query);
-        return stmt.all(
-            endDate.toISOString(),
-            startDate.toISOString(),
-            endDate.toISOString()
-        ) as TimeSpent[];
-    }
-
-    public getRecentWindows(limit: number = 10): RecentWindow[] {
-        const query = `
-            SELECT 
-                window_title as title,
-                category,
-                timestamp
-            FROM window_switches
-            ORDER BY timestamp DESC
-            LIMIT ?;
-        `;
-        
-        const stmt = this.db.prepare(query);
-        return stmt.all(limit) as RecentWindow[];
-    }
-
     public close() {
-        this.db.close();
+        if (this.db) {
+            try {
+                this.db.close();
+            } catch (error) {
+                console.error('Error closing database:', error);
+            }
+        }
     }
 }

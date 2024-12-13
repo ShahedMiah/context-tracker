@@ -58,7 +58,6 @@
             border: 1px solid #ddd;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -95,6 +94,18 @@
         </div>
     </div>
 
-    <script src="../dist/views/statistics.js"></script>
+    <!-- Load dependencies first -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Then load our application code -->
+    <script src="../statistics.js"></script>
+    
+    <script>
+        // Check if scripts are loaded
+        console.log('Chart.js loaded:', typeof Chart !== 'undefined');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded');
+        });
+    </script>
 </body>
 </html>

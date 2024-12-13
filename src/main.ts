@@ -6,7 +6,8 @@ let windowTracker: WindowTracker;
 let database: DatabaseService;
 
 // Add support for secure restorable state on macOS
-if (process.platform === 'darwin') {
+if (process.platform === 'darwin' && typeof app.setSecureKeyboardEntryEnabled === 'function') {
+  // @ts-ignore - Property might not exist in older versions
   app.applicationSupportsSecureRestorableState = true;
 }
 

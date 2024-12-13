@@ -1,4 +1,4 @@
-import { app, screen, systemPreferences } from 'electron';
+import { app, screen } from 'electron';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { DatabaseService } from './Database';
@@ -22,10 +22,6 @@ export class WindowTracker {
 
     private async checkPermissions(): Promise<boolean> {
         if (process.platform === 'darwin') {
-            // Check Accessibility permission
-            const hasAccessibility = systemPreferences.getAuthorizationStatus('accessibility') === 'authorized';
-            console.log('Has accessibility permission:', hasAccessibility);
-
             // Request screen recording permission if needed
             try {
                 const script = 'tell application "System Events" to get name of first application process whose frontmost is true';

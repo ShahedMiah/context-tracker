@@ -19,6 +19,7 @@ export class WindowTracker {
     public startTracking(intervalMs: number = 1000) {
         if (this.isTracking) return;
         
+        console.log('Starting window tracking...');
         this.isTracking = true;
         this.trackingInterval = setInterval(() => this.checkActiveWindow(), intervalMs);
     }
@@ -29,12 +30,12 @@ export class WindowTracker {
             this.trackingInterval = null;
         }
         this.isTracking = false;
+        console.log('Window tracking stopped');
     }
 
     private async checkActiveWindow() {
         try {
             const activeWindow = BrowserWindow.getFocusedWindow();
-            const allWindows = BrowserWindow.getAllWindows();
             
             // Get all visible windows on the system using screen capture permissions
             const displays = screen.getAllDisplays();
@@ -49,6 +50,12 @@ export class WindowTracker {
             
             if (title !== this.lastActiveWindow) {
                 // Window switch detected
+                console.log('Window switch detected:', {
+                    from: this.lastActiveWindow,
+                    to: title,
+                    category: this.currentCategory
+                });
+
                 await this.database.recordWindowSwitch({
                     timestamp: timestamp,
                     windowTitle: title,

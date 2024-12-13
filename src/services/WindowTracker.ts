@@ -1,17 +1,23 @@
-import activeWindow from 'active-win';
-import { Database } from './Database';
+import activeWindow, { Result } from 'active-win';
+import { DatabaseService } from './Database';
+
+interface WindowInfo {
+  title: string;
+  appName: string;
+  timestamp: number;
+}
 
 export class WindowTracker {
-  private trackingInterval: NodeJS.Timer | null = null;
+  private trackingInterval: NodeJS.Timeout | null = null;
   private lastActiveWindow: string | null = null;
   private lastSwitchTime: number = Date.now();
-  private database: Database;
+  private database: DatabaseService;
 
-  constructor(database: Database) {
+  constructor(database: DatabaseService) {
     this.database = database;
   }
 
-  async startTracking() {
+  async startTracking(): Promise<void> {
     // Check active window every second
     this.trackingInterval = setInterval(async () => {
       try {
@@ -19,10 +25,9 @@ export class WindowTracker {
         
         if (!result) return;
 
-        const currentWindow = {
+        const currentWindow: WindowInfo = {
           title: result.title,
           appName: result.owner.name,
-          bundleId: result.owner.bundleId || '',
           timestamp: Date.now()
         };
 
@@ -32,7 +37,7 @@ export class WindowTracker {
           
           if (this.lastActiveWindow) {
             // Log the completed session
-            await this.database.logSession({
+            this.database.logSession({
               appName: this.lastActiveWindow,
               startTime: this.lastSwitchTime,
               endTime: Date.now(),
@@ -45,7 +50,7 @@ export class WindowTracker {
           this.lastSwitchTime = Date.now();
 
           // Log the context switch
-          await this.database.logContextSwitch({
+          this.database.logContextSwitch({
             fromApp: this.lastActiveWindow || '',
             toApp: currentWindow.appName,
             timestamp: Date.now()
@@ -54,10 +59,10 @@ export class WindowTracker {
       } catch (error) {
         console.error('Error tracking window:', error);
       }
-    }, 1000);
+    }, 1000) as unknown as NodeJS.Timeout;
   }
 
-  stopTracking() {
+  stopTracking(): void {
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
       this.trackingInterval = null;

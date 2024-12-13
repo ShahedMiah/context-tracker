@@ -31,43 +31,8 @@ npm run dev
 
 ### Prerequisites
 
-1. Install icon creation tools (macOS):
-```bash
-brew install librsvg
-brew install imagemagick
-```
-
-### Creating the App Icon
-
-1. Create the icon directories:
-```bash
-mkdir -p icon.iconset
-```
-
-2. Create the conversion script (make-icon.sh):
-```bash
-#!/bin/bash
-
-# Convert SVG to PNG at different sizes
-for size in 16 32 64 128 256 512 1024; do
-  rsvg-convert -w $size -h $size resources/icon.svg > icon.iconset/icon_${size}x${size}.png
-  if [ $size -le 512 ]; then
-    rsvg-convert -w $((size*2)) -h $((size*2)) resources/icon.svg > icon.iconset/icon_${size}x${size}@2x.png
-  fi
-done
-
-# Create .icns file
-iconutil -c icns icon.iconset -o resources/icon.icns
-
-# Clean up
-rm -rf icon.iconset
-```
-
-3. Run the icon creation script:
-```bash
-chmod +x make-icon.sh
-./make-icon.sh
-```
+- Node.js and npm installed
+- For icon generation, see [resources/README.md](resources/README.md)
 
 ### Building the Distribution
 

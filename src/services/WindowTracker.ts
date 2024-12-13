@@ -1,6 +1,10 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, screen } from 'electron';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { DatabaseService } from './Database';
 import { ContextCategorizationService } from './ContextCategorizationService';
+
+const execAsync = promisify(exec);
 
 export class WindowTracker {
     private database: DatabaseService;
@@ -14,6 +18,51 @@ export class WindowTracker {
     constructor(database: DatabaseService) {
         this.database = database;
         this.categorization = new ContextCategorizationService();
+    }
+
+    private async getCurrentWindowTitle(): Promise<string> {
+        try {
+            if (process.platform === 'darwin') {
+                // macOS
+                const script = `
+                    tell application "System Events"
+                        set frontApp to first application process whose frontmost is true
+                        set windowTitle to ""
+                        try
+                            set windowTitle to name of window 1 of frontApp
+                        end try
+                        return {name of frontApp, windowTitle}
+                    end tell
+                `;
+                const { stdout } = await execAsync(`osascript -e '${script}'`);
+                const [appName, windowTitle] = stdout.trim().split(',').map(s => s.trim());
+                return windowTitle || appName;
+            } else if (process.platform === 'win32') {
+                // Windows
+                const script = `
+                    Add-Type @"
+                    using System;
+                    using System.Runtime.InteropServices;
+                    public class WindowTitle {
+                        [DllImport("user32.dll")]
+                        public static extern IntPtr GetForegroundWindow();
+                        [DllImport("user32.dll")]
+                        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+                    }
+                "@
+                $window = [WindowTitle]::GetForegroundWindow()
+                $buffer = New-Object System.Text.StringBuilder(256)
+                [WindowTitle]::GetWindowText($window, $buffer, 256)
+                $buffer.ToString()
+                `;
+                const { stdout } = await execAsync('powershell -Command "' + script + '"');
+                return stdout.trim();
+            }
+            return 'Unknown';
+        } catch (error) {
+            console.error('Error getting window title:', error);
+            return 'Unknown';
+        }
     }
 
     public startTracking(intervalMs: number = 1000) {
@@ -35,14 +84,7 @@ export class WindowTracker {
 
     private async checkActiveWindow() {
         try {
-            const activeWindow = BrowserWindow.getFocusedWindow();
-            
-            // Get all visible windows on the system using screen capture permissions
-            const displays = screen.getAllDisplays();
-            const timestamp = new Date();
-            
-            // Get the current window title
-            const title = activeWindow?.getTitle() || 'Unknown';
+            const title = await this.getCurrentWindowTitle();
             this.currentWindowTitle = title;
             
             // Categorize the window
@@ -56,8 +98,9 @@ export class WindowTracker {
                     category: this.currentCategory
                 });
 
+                const displays = screen.getAllDisplays();
                 await this.database.recordWindowSwitch({
-                    timestamp: timestamp,
+                    timestamp: new Date(),
                     windowTitle: title,
                     processName: app.getName(),
                     display: displays[0].id,

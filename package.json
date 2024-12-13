@@ -1,0 +1,23 @@
+{
+  "name": "context-tracker",
+  "version": "1.0.0",
+  "description": "Smart desktop app that tracks context switches",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "dependencies": {
+    "active-win": "^8.1.1",
+    "electron-store": "^8.1.0",
+    "better-sqlite3": "^9.2.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.10.5",
+    "electron": "^28.1.0",
+    "typescript": "^5.3.3"
+  }
+}

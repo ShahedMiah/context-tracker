@@ -12,12 +12,18 @@ export class StatisticsWindow {
     }
 
     private setupIpcHandlers() {
-        ipcMain.handle('get-window-switches', (event, limit) => {
-            return this.database.getRecentWindows(limit || 10);
+        ipcMain.handle('get-window-switches', async (event, limit) => {
+            console.log('Fetching recent windows, limit:', limit);
+            const result = await this.database.getRecentWindows(limit || 10);
+            console.log('Recent windows result:', result);
+            return result;
         });
 
-        ipcMain.handle('get-time-spent', (event, startDate, endDate) => {
-            return this.database.getTimeSpentByCategory(new Date(startDate), new Date(endDate));
+        ipcMain.handle('get-time-spent', async (event, startDate, endDate) => {
+            console.log('Fetching time spent between:', startDate, 'and', endDate);
+            const result = this.database.getTimeSpentByCategory(new Date(startDate), new Date(endDate));
+            console.log('Time spent result:', result);
+            return result;
         });
     }
 

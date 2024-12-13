@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { WindowTracker } from './services/WindowTracker';
 import { DatabaseService } from './services/Database';
 import { SystemTrayManager } from './services/SystemTrayManager';
@@ -23,11 +23,6 @@ app.whenReady().then(() => {
 
   // Initialize system tray with both windowTracker and database
   systemTray = new SystemTrayManager(windowTracker, database);
-  
-  // Set up IPC handlers for the statistics window
-  ipcMain.handle('get-time-spent', (event, startDate, endDate) => {
-    return database.getTimeSpentByCategory(new Date(startDate), new Date(endDate));
-  });
 
   // Keep the app running even when all windows are closed
   app.on('window-all-closed', () => {

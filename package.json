@@ -17,6 +17,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.10.5",
+    "@types/http-cache-semantics": "^4.0.4",
     "electron": "^28.1.0",
     "typescript": "^5.3.3"
   }

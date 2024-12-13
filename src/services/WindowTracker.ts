@@ -1,71 +1,61 @@
-import activeWindow, { Result } from 'active-win';
+import { app, BrowserWindow, screen } from 'electron';
 import { DatabaseService } from './Database';
 
-interface WindowInfo {
-  title: string;
-  appName: string;
-  timestamp: number;
-}
-
 export class WindowTracker {
-  private trackingInterval: NodeJS.Timeout | null = null;
-  private lastActiveWindow: string | null = null;
-  private lastSwitchTime: number = Date.now();
   private database: DatabaseService;
+  private trackingInterval: NodeJS.Timer | null = null;
+  private lastActiveWindow: string | null = null;
+  private isTracking: boolean = false;
 
   constructor(database: DatabaseService) {
     this.database = database;
   }
 
-  async startTracking(): Promise<void> {
-    // Check active window every second
-    this.trackingInterval = setInterval(async () => {
-      try {
-        const result = await activeWindow();
-        
-        if (!result) return;
-
-        const currentWindow: WindowInfo = {
-          title: result.title,
-          appName: result.owner.name,
-          timestamp: Date.now()
-        };
-
-        // Detect context switch
-        if (this.lastActiveWindow !== currentWindow.appName) {
-          const duration = Date.now() - this.lastSwitchTime;
-          
-          if (this.lastActiveWindow) {
-            // Log the completed session
-            this.database.logSession({
-              appName: this.lastActiveWindow,
-              startTime: this.lastSwitchTime,
-              endTime: Date.now(),
-              duration
-            });
-          }
-
-          // Update tracking state
-          this.lastActiveWindow = currentWindow.appName;
-          this.lastSwitchTime = Date.now();
-
-          // Log the context switch
-          this.database.logContextSwitch({
-            fromApp: this.lastActiveWindow || '',
-            toApp: currentWindow.appName,
-            timestamp: Date.now()
-          });
-        }
-      } catch (error) {
-        console.error('Error tracking window:', error);
-      }
-    }, 1000) as unknown as NodeJS.Timeout;
+  public startTracking(intervalMs: number = 1000) {
+    if (this.isTracking) return;
+    
+    this.isTracking = true;
+    this.trackingInterval = setInterval(() => this.checkActiveWindow(), intervalMs);
   }
 
-  stopTracking(): void {
+  public stopTracking() {
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
       this.trackingInterval = null;
     }
+    this.isTracking = false;
+  }
+
+  private async checkActiveWindow() {
+    try {
+      const activeWindow = BrowserWindow.getFocusedWindow();
+      const allWindows = BrowserWindow.getAllWindows();
+      
+      // Get all visible windows on the system using screen capture permissions
+      const displays = screen.getAllDisplays();
+      const timestamp = new Date();
+      
+      // Get the current window title
+      const title = activeWindow?.getTitle() || 'Unknown';
+      
+      if (title !== this.lastActiveWindow) {
+        // Window switch detected
+        await this.database.recordWindowSwitch({
+          timestamp: timestamp,
+          windowTitle: title,
+          // Add more metadata as needed
+          processName: app.getName(),
+          display: displays[0].id // Primary display ID
+        });
+        
+        this.lastActiveWindow = title;
+      }
+    } catch (error) {
+      console.error('Error tracking window:', error);
+    }
+  }
+
+  public isCurrentlyTracking(): boolean {
+    return this.isTracking;
   }
 }

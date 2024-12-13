@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog, Event } from 'electron';
 import { WindowTracker } from './services/WindowTracker';
 import { DatabaseService } from './services/Database';
 import { SystemTrayManager } from './services/SystemTrayManager';
@@ -50,8 +50,8 @@ if (!gotTheLock) {
     });
 
     // Keep the app running even when all windows are closed
-    app.on('window-all-closed', (e) => {
-        e.preventDefault(); // Prevent the app from quitting
+    app.on('window-all-closed', (event: Event) => {
+        event.preventDefault(); // Prevent the app from quitting
     });
 
     // Log any unhandled errors

@@ -5,6 +5,11 @@ import { DatabaseService } from './services/Database';
 let windowTracker: WindowTracker;
 let database: DatabaseService;
 
+// Add support for secure restorable state on macOS
+if (process.platform === 'darwin') {
+  app.applicationSupportsSecureRestorableState = true;
+}
+
 app.whenReady().then(() => {
   // Initialize database
   database = new DatabaseService();

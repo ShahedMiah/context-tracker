@@ -1,13 +1,13 @@
 import { app, BrowserWindow } from 'electron';
 import { WindowTracker } from './services/WindowTracker';
-import { Database } from './services/Database';
+import { DatabaseService } from './services/Database';
 
 let windowTracker: WindowTracker;
-let database: Database;
+let database: DatabaseService;
 
 app.whenReady().then(() => {
   // Initialize database
-  database = new Database();
+  database = new DatabaseService();
   
   // Initialize window tracker
   windowTracker = new WindowTracker(database);

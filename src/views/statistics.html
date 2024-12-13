@@ -105,15 +105,9 @@
     <!-- Load dependencies first -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Then load our application code -->
-    <script src="../views/statistics.js"></script>
-    
+    <!-- Load our code as a module -->
     <script>
-        // Check if scripts are loaded
-        console.log('Chart.js loaded:', typeof Chart !== 'undefined');
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM fully loaded');
-        });
+        require('../views/statistics.js');
     </script>
 </body>
 </html>

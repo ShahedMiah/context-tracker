@@ -5,10 +5,11 @@
   "main": "dist/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "tsc && electron .",
-    "build": "tsc",
+    "dev": "tsc && npm run copy-files && electron .",
+    "build": "tsc && npm run copy-files",
     "watch": "tsc -w",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "copy-files": "cp -r src/views dist/"
   },
   "dependencies": {
     "electron-store": "^8.1.0",

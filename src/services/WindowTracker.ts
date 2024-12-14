@@ -18,6 +18,7 @@ export class WindowTracker {
     constructor(database: DatabaseService) {
         this.database = database;
         this.categorization = new ContextCategorizationService();
+        // Don't start tracking automatically
     }
 
     private async checkPermissions(): Promise<boolean> {
@@ -35,10 +36,6 @@ export class WindowTracker {
     }
 
     private async getNativeWindowTitle(): Promise<string> {
-        if (!this.isTracking) {
-            return 'Tracking Paused';
-        }
-
         try {
             if (process.platform === 'darwin') {
                 const hasPermissions = await this.checkPermissions();
@@ -87,10 +84,13 @@ export class WindowTracker {
     }
 
     public async startTracking(intervalMs: number = 1000) {
-        console.log('Starting window tracking...');
+        // If already tracking, don't start again
+        if (this.isTracking) {
+            console.log('Already tracking, ignoring start request');
+            return;
+        }
 
-        // Stop any existing tracking first
-        this.stopTracking();
+        console.log('Starting window tracking...');
 
         // Check permissions before starting
         const hasPermissions = await this.checkPermissions();
@@ -99,18 +99,24 @@ export class WindowTracker {
             return;
         }
 
-        // Set tracking state
+        // Set tracking state first
         this.isTracking = true;
         
+        // Get initial window title
+        const initialTitle = await this.getNativeWindowTitle();
+        this.currentWindowTitle = initialTitle;
+        this.currentCategory = this.categorization.categorizeWindow(initialTitle);
+        
         // Start the tracking interval
-        this.trackingInterval = setInterval(async () => {
-            await this.checkActiveWindow();
+        this.trackingInterval = setInterval(() => {
+            // Only check if still tracking
+            if (this.isTracking) {
+                this.checkActiveWindow().catch(error => {
+                    console.error('Error in tracking interval:', error);
+                });
+            }
         }, intervalMs);
 
-        // Get initial window title
-        this.currentWindowTitle = await this.getNativeWindowTitle();
-        this.currentCategory = this.categorization.categorizeWindow(this.currentWindowTitle);
-        
         console.log('Tracking started successfully');
     }
 
@@ -123,7 +129,7 @@ export class WindowTracker {
             this.trackingInterval = null;
         }
 
-        // Reset tracking state
+        // Reset all tracking state
         this.isTracking = false;
         this.lastActiveWindow = null;
         this.currentWindowTitle = 'Tracking Paused';
@@ -133,35 +139,38 @@ export class WindowTracker {
     }
 
     private async checkActiveWindow() {
-        if (!this.isTracking || !this.trackingInterval) {
+        // Double-check tracking state
+        if (!this.isTracking) {
+            console.log('Tracking is paused, skipping window check');
             return;
         }
 
         try {
             const title = await this.getNativeWindowTitle();
-            this.currentWindowTitle = title;
             
-            // Categorize the window
-            this.currentCategory = this.categorization.categorizeWindow(title);
-            
-            if (title !== this.lastActiveWindow) {
-                // Window switch detected
-                console.log('Window switch detected:', {
-                    from: this.lastActiveWindow,
-                    to: title,
-                    category: this.currentCategory
-                });
-
-                const displays = screen.getAllDisplays();
-                await this.database.recordWindowSwitch({
-                    timestamp: new Date(),
-                    windowTitle: title,
-                    processName: app.getName(),
-                    display: displays[0].id,
-                    category: this.currentCategory
-                });
+            // Only update if still tracking
+            if (this.isTracking) {
+                this.currentWindowTitle = title;
+                this.currentCategory = this.categorization.categorizeWindow(title);
                 
-                this.lastActiveWindow = title;
+                if (title !== this.lastActiveWindow) {
+                    console.log('Window switch detected:', {
+                        from: this.lastActiveWindow,
+                        to: title,
+                        category: this.currentCategory
+                    });
+
+                    const displays = screen.getAllDisplays();
+                    await this.database.recordWindowSwitch({
+                        timestamp: new Date(),
+                        windowTitle: title,
+                        processName: app.getName(),
+                        display: displays[0].id,
+                        category: this.currentCategory
+                    });
+                    
+                    this.lastActiveWindow = title;
+                }
             }
         } catch (error) {
             console.error('Error tracking window:', error);
@@ -169,14 +178,14 @@ export class WindowTracker {
     }
 
     public isCurrentlyTracking(): boolean {
-        return this.isTracking && this.trackingInterval !== null;
+        return this.isTracking;
     }
 
     public getWindowTitle(): string {
-        return this.isCurrentlyTracking() ? this.currentWindowTitle : 'Tracking Paused';
+        return this.isTracking ? this.currentWindowTitle : 'Tracking Paused';
     }
 
     public getCurrentCategory(): string {
-        return this.isCurrentlyTracking() ? this.currentCategory : 'Tracking Paused';
+        return this.isTracking ? this.currentCategory : 'Tracking Paused';
     }
 }

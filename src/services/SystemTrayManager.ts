@@ -55,22 +55,21 @@ export class SystemTrayManager {
             const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
             const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
-            this.currentContextMenu = Menu.buildFromTemplate([
+            // Create menu template with informative labels instead of disabled items
+            const menuTemplate = [
                 {
-                    label: `👁 Monitoring: ${currentWindow}`,
+                    label: `Current Window: ${currentWindow}`,
                     type: 'normal',
-                    enabled: true,
                     id: 'currentWindow'
                 },
                 {
-                    label: `🏷 Category: ${currentCategory}`,
+                    label: `Category: ${currentCategory}`,
                     type: 'normal',
-                    enabled: true,
                     id: 'currentCategory'
                 },
                 { type: 'separator' },
                 {
-                    label: isTracking ? '⏸ Pause Tracking' : '▶️ Resume Tracking',
+                    label: isTracking ? 'Pause Tracking' : 'Resume Tracking',
                     click: () => {
                         if (isTracking) {
                             this.windowTracker.stopTracking();
@@ -82,18 +81,19 @@ export class SystemTrayManager {
                 },
                 { type: 'separator' },
                 {
-                    label: '📊 Show Statistics',
+                    label: 'Show Statistics',
                     click: () => {
                         this.statisticsWindow.show();
                     }
                 },
                 { type: 'separator' },
                 {
-                    label: '❌ Quit',
+                    label: 'Quit',
                     click: () => app.quit()
                 }
-            ]);
+            ];
 
+            this.currentContextMenu = Menu.buildFromTemplate(menuTemplate);
             this.tray.setContextMenu(this.currentContextMenu);
             console.log('Context menu updated successfully');
         } catch (error) {
@@ -104,10 +104,10 @@ export class SystemTrayManager {
     private startStatsUpdate() {
         try {
             console.log('Starting stats update timer...');
-            // Update stats more frequently for smoother updates
+            // Update stats every second for smoother updates
             this.updateInterval = setInterval(() => {
                 this.updateCurrentWindow();
-            }, 1000); // Changed from 2000ms to 1000ms for more responsive updates
+            }, 1000);
         } catch (error) {
             console.error('Error starting stats update:', error);
         }
@@ -121,15 +121,16 @@ export class SystemTrayManager {
             const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
             const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
+            // Update the labels for the informative menu items
             const windowItem = this.currentContextMenu.getMenuItemById('currentWindow');
             const categoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
 
             if (windowItem) {
-                windowItem.label = `👁 Monitoring: ${isTracking ? currentWindow : 'Paused'}`;
+                windowItem.label = `Current Window: ${currentWindow}`;
             }
 
             if (categoryItem) {
-                categoryItem.label = `🏷 Category: ${isTracking ? currentCategory : 'Paused'}`;
+                categoryItem.label = `Category: ${currentCategory}`;
             }
 
             this.tray.setContextMenu(this.currentContextMenu);

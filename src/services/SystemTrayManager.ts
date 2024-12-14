@@ -1,4 +1,4 @@
-import { Tray, Menu, app, dialog } from 'electron';
+import { Tray, Menu, app, dialog, MenuItemConstructorOptions } from 'electron';
 import path from 'path';
 import { WindowTracker } from './WindowTracker';
 import { StatisticsWindow } from '../windows/StatisticsWindow';
@@ -29,7 +29,7 @@ export class SystemTrayManager {
             
             // Set a default menu immediately
             const defaultMenu = Menu.buildFromTemplate([
-                { label: 'Loading...', enabled: false }
+                { label: 'Loading...', enabled: false } as MenuItemConstructorOptions
             ]);
             this.tray.setContextMenu(defaultMenu);
             
@@ -55,17 +55,15 @@ export class SystemTrayManager {
             const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
             const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
-            // Create menu template with informative labels instead of disabled items
-            const menuTemplate = [
+            // Create menu template with proper type annotations
+            const menuTemplate: MenuItemConstructorOptions[] = [
                 {
                     label: `📱 ${currentWindow}`,
-                    type: 'normal',
-                    id: 'currentWindow'
+                    enabled: true
                 },
                 {
                     label: `🏷️ ${currentCategory}`,
-                    type: 'normal',
-                    id: 'currentCategory'
+                    enabled: true
                 },
                 { type: 'separator' },
                 {
@@ -121,16 +119,13 @@ export class SystemTrayManager {
             const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
             const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
-            // Update the labels for the informative menu items
-            const windowItem = this.currentContextMenu.getMenuItemById('currentWindow');
-            const categoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
-
-            if (windowItem) {
-                windowItem.label = `📱 ${isTracking ? currentWindow : 'Tracking Paused'}`;
+            // Update the labels
+            const menuItems = this.currentContextMenu.items;
+            if (menuItems[0]) {
+                menuItems[0].label = `📱 ${isTracking ? currentWindow : 'Tracking Paused'}`;
             }
-
-            if (categoryItem) {
-                categoryItem.label = `🏷️ ${isTracking ? currentCategory : 'Tracking Paused'}`;
+            if (menuItems[1]) {
+                menuItems[1].label = `🏷️ ${isTracking ? currentCategory : 'Tracking Paused'}`;
             }
 
             this.tray.setContextMenu(this.currentContextMenu);

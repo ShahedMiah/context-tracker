@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, app } from 'electron';
 import path from 'path';
 import { DatabaseService } from '../services/Database';
 
@@ -33,6 +33,11 @@ export class StatisticsWindow {
             return;
         }
 
+        // Show dock icon when statistics window is opened
+        if (process.platform === 'darwin') {
+            app.dock.show();
+        }
+
         this.window = new BrowserWindow({
             width: 800,
             height: 600,
@@ -40,7 +45,8 @@ export class StatisticsWindow {
                 nodeIntegration: true,
                 contextIsolation: false
             },
-            title: 'Context Tracker - Statistics'
+            title: 'Context Tracker - Statistics',
+            show: false // Don't show until ready-to-show
         });
 
         const htmlPath = path.join(__dirname, '../views/statistics.html');
@@ -48,8 +54,13 @@ export class StatisticsWindow {
         
         this.window.loadFile(htmlPath);
 
-        // Open DevTools for debugging
-        this.window.webContents.openDevTools();
+        // Wait for the content to be ready before showing
+        this.window.once('ready-to-show', () => {
+            this.window?.show();
+        });
+
+        // Remove DevTools for production
+        // this.window.webContents.openDevTools();
 
         // Log any loading errors
         this.window.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
@@ -57,6 +68,10 @@ export class StatisticsWindow {
         });
 
         this.window.on('closed', () => {
+            // Hide dock icon when window is closed (if no other windows are open)
+            if (process.platform === 'darwin' && BrowserWindow.getAllWindows().length === 0) {
+                app.dock.hide();
+            }
             this.window = null;
         });
     }

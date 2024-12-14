@@ -11,6 +11,12 @@ interface WindowSwitchRecord {
     category?: string;
 }
 
+interface TimeSpent {
+    category: string;
+    totalMinutes: number;
+    percentage: number;
+}
+
 export class DatabaseService {
     private db: Database.Database;
     private dbPath: string;
@@ -72,6 +78,69 @@ export class DatabaseService {
             record.display,
             record.category || 'Other'
         );
+    }
+
+    public getTimeSpentByCategory(startDate: Date, endDate: Date): TimeSpent[] {
+        const query = `
+            WITH time_diffs AS (
+                SELECT 
+                    category,
+                    ROUND(
+                        SUM(
+                            CASE 
+                                WHEN lead_timestamp IS NULL THEN 
+                                    JULIANDAY(?) - JULIANDAY(timestamp)
+                                ELSE 
+                                    JULIANDAY(lead_timestamp) - JULIANDAY(timestamp)
+                            END * 24 * 60
+                        )
+                    ) as minutes
+                FROM (
+                    SELECT 
+                        category,
+                        timestamp,
+                        LEAD(timestamp) OVER (ORDER BY timestamp) as lead_timestamp
+                    FROM window_switches
+                    WHERE timestamp BETWEEN ? AND ?
+                )
+                GROUP BY category
+            )
+            SELECT 
+                category,
+                minutes as totalMinutes,
+                ROUND(CAST(minutes AS FLOAT) * 100 / SUM(minutes) OVER (), 2) as percentage
+            FROM time_diffs
+            ORDER BY minutes DESC;
+        `;
+
+        try {
+            const stmt = this.db.prepare(query);
+            return stmt.all(
+                endDate.toISOString(),
+                startDate.toISOString(),
+                endDate.toISOString()
+            ) as TimeSpent[];
+        } catch (error) {
+            console.error('Error getting time spent:', error);
+            return [];
+        }
+    }
+
+    public getRecentWindows(limit: number = 10): { title: string; category: string; timestamp: string }[] {
+        const query = `
+            SELECT window_title as title, category, timestamp
+            FROM window_switches
+            ORDER BY timestamp DESC
+            LIMIT ?;
+        `;
+        
+        try {
+            const stmt = this.db.prepare(query);
+            return stmt.all(limit);
+        } catch (error) {
+            console.error('Error getting recent windows:', error);
+            return [];
+        }
     }
 
     public close() {

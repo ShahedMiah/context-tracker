@@ -51,24 +51,28 @@ export class SystemTrayManager {
                 throw new Error('Tray not initialized');
             }
 
-            console.log('Updating context menu...');
+            const isTracking = this.windowTracker.isCurrentlyTracking();
+            const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
+            const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
             this.currentContextMenu = Menu.buildFromTemplate([
                 {
-                    label: 'Current Window',
-                    enabled: false,
+                    label: `👁 Monitoring: ${currentWindow}`,
+                    type: 'normal',
+                    enabled: true,
                     id: 'currentWindow'
                 },
                 {
-                    label: 'Current Category',
-                    enabled: false,
+                    label: `🏷 Category: ${currentCategory}`,
+                    type: 'normal',
+                    enabled: true,
                     id: 'currentCategory'
                 },
                 { type: 'separator' },
                 {
-                    label: this.windowTracker.isCurrentlyTracking() ? 'Pause Tracking' : 'Resume Tracking',
+                    label: isTracking ? '⏸ Pause Tracking' : '▶️ Resume Tracking',
                     click: () => {
-                        if (this.windowTracker.isCurrentlyTracking()) {
+                        if (isTracking) {
                             this.windowTracker.stopTracking();
                         } else {
                             this.windowTracker.startTracking();
@@ -78,14 +82,14 @@ export class SystemTrayManager {
                 },
                 { type: 'separator' },
                 {
-                    label: 'Show Statistics',
+                    label: '📊 Show Statistics',
                     click: () => {
                         this.statisticsWindow.show();
                     }
                 },
                 { type: 'separator' },
                 {
-                    label: 'Quit',
+                    label: '❌ Quit',
                     click: () => app.quit()
                 }
             ]);
@@ -100,10 +104,10 @@ export class SystemTrayManager {
     private startStatsUpdate() {
         try {
             console.log('Starting stats update timer...');
-            // Update stats every 2 seconds
+            // Update stats more frequently for smoother updates
             this.updateInterval = setInterval(() => {
                 this.updateCurrentWindow();
-            }, 2000);
+            }, 1000); // Changed from 2000ms to 1000ms for more responsive updates
         } catch (error) {
             console.error('Error starting stats update:', error);
         }
@@ -113,17 +117,19 @@ export class SystemTrayManager {
         if (!this.tray || !this.currentContextMenu) return;
 
         try {
-            const currentWindowItem = this.currentContextMenu.getMenuItemById('currentWindow');
-            const currentCategoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
+            const isTracking = this.windowTracker.isCurrentlyTracking();
+            const currentWindow = this.windowTracker.getWindowTitle() || 'Unknown';
+            const currentCategory = this.windowTracker.getCurrentCategory() || 'Other';
 
-            if (currentWindowItem) {
-                const currentTitle = this.windowTracker.getWindowTitle();
-                currentWindowItem.label = `Current: ${currentTitle || 'Unknown'}`;
+            const windowItem = this.currentContextMenu.getMenuItemById('currentWindow');
+            const categoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
+
+            if (windowItem) {
+                windowItem.label = `👁 Monitoring: ${isTracking ? currentWindow : 'Paused'}`;
             }
 
-            if (currentCategoryItem) {
-                const currentCategory = this.windowTracker.getCurrentCategory();
-                currentCategoryItem.label = `Category: ${currentCategory || 'Other'}`;
+            if (categoryItem) {
+                categoryItem.label = `🏷 Category: ${isTracking ? currentCategory : 'Paused'}`;
             }
 
             this.tray.setContextMenu(this.currentContextMenu);

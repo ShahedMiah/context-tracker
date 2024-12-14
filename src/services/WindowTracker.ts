@@ -18,11 +18,11 @@ export class WindowTracker {
     constructor(database: DatabaseService) {
         this.database = database;
         this.categorization = new ContextCategorizationService();
+        this.startTracking(); // Start tracking by default
     }
 
     private async checkPermissions(): Promise<boolean> {
         if (process.platform === 'darwin') {
-            // Request screen recording permission if needed
             try {
                 const script = 'tell application "System Events" to get name of first application process whose frontmost is true';
                 await execAsync(`osascript -e '${script}'`);
@@ -37,16 +37,18 @@ export class WindowTracker {
     }
 
     private async getNativeWindowTitle(): Promise<string> {
+        if (!this.isTracking) {
+            return 'Tracking Paused';
+        }
+
         try {
             if (process.platform === 'darwin') {
-                // Check permissions first
                 const hasPermissions = await this.checkPermissions();
                 if (!hasPermissions) {
                     console.log('Missing required permissions');
                     return 'Permissions required';
                 }
 
-                // macOS
                 const script = `
                     tell application "System Events"
                         set frontApp to first application process whose frontmost is true
@@ -61,7 +63,6 @@ export class WindowTracker {
                 const [appName, windowTitle] = stdout.trim().split(',').map(s => s.trim());
                 return windowTitle || appName;
             } else if (process.platform === 'win32') {
-                // Windows
                 const script = `
                     Add-Type @"
                     using System;
@@ -93,7 +94,6 @@ export class WindowTracker {
         
         console.log('Starting window tracking...');
 
-        // Check permissions before starting
         const hasPermissions = await this.checkPermissions();
         if (!hasPermissions) {
             console.log('Cannot start tracking - missing permissions');
@@ -102,6 +102,8 @@ export class WindowTracker {
 
         this.isTracking = true;
         this.trackingInterval = setInterval(() => this.checkActiveWindow(), intervalMs);
+        this.currentWindowTitle = await this.getNativeWindowTitle();
+        this.currentCategory = this.categorization.categorizeWindow(this.currentWindowTitle);
     }
 
     public stopTracking() {
@@ -110,10 +112,15 @@ export class WindowTracker {
             this.trackingInterval = null;
         }
         this.isTracking = false;
+        this.currentWindowTitle = 'Tracking Paused';
+        this.currentCategory = 'Tracking Paused';
+        this.lastActiveWindow = null;
         console.log('Window tracking stopped');
     }
 
     private async checkActiveWindow() {
+        if (!this.isTracking) return;
+
         try {
             const title = await this.getNativeWindowTitle();
             this.currentWindowTitle = title;
@@ -150,10 +157,10 @@ export class WindowTracker {
     }
 
     public getWindowTitle(): string {
-        return this.currentWindowTitle;
+        return this.isTracking ? this.currentWindowTitle : 'Tracking Paused';
     }
 
     public getCurrentCategory(): string {
-        return this.currentCategory;
+        return this.isTracking ? this.currentCategory : 'Tracking Paused';
     }
 }

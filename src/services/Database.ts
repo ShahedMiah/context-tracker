@@ -17,6 +17,12 @@ interface TimeSpent {
     percentage: number;
 }
 
+interface RecentWindow {
+    title: string;
+    category: string;
+    timestamp: string;
+}
+
 export class DatabaseService {
     private db: Database.Database;
     private dbPath: string;
@@ -126,9 +132,12 @@ export class DatabaseService {
         }
     }
 
-    public getRecentWindows(limit: number = 10): { title: string; category: string; timestamp: string }[] {
+    public getRecentWindows(limit: number = 10): RecentWindow[] {
         const query = `
-            SELECT window_title as title, category, timestamp
+            SELECT 
+                window_title as title,
+                category,
+                timestamp
             FROM window_switches
             ORDER BY timestamp DESC
             LIMIT ?;
@@ -136,7 +145,7 @@ export class DatabaseService {
         
         try {
             const stmt = this.db.prepare(query);
-            return stmt.all(limit);
+            return stmt.all(limit) as RecentWindow[];
         } catch (error) {
             console.error('Error getting recent windows:', error);
             return [];

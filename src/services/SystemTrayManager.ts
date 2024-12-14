@@ -58,18 +58,18 @@ export class SystemTrayManager {
             // Create menu template with informative labels instead of disabled items
             const menuTemplate = [
                 {
-                    label: `Current Window: ${currentWindow}`,
+                    label: `📱 ${currentWindow}`,
                     type: 'normal',
                     id: 'currentWindow'
                 },
                 {
-                    label: `Category: ${currentCategory}`,
+                    label: `🏷️ ${currentCategory}`,
                     type: 'normal',
                     id: 'currentCategory'
                 },
                 { type: 'separator' },
                 {
-                    label: isTracking ? 'Pause Tracking' : 'Resume Tracking',
+                    label: isTracking ? '⏸️ Pause Tracking' : '▶️ Resume Tracking',
                     click: () => {
                         if (isTracking) {
                             this.windowTracker.stopTracking();
@@ -81,14 +81,14 @@ export class SystemTrayManager {
                 },
                 { type: 'separator' },
                 {
-                    label: 'Show Statistics',
+                    label: '📊 Show Statistics',
                     click: () => {
                         this.statisticsWindow.show();
                     }
                 },
                 { type: 'separator' },
                 {
-                    label: 'Quit',
+                    label: '❌ Quit',
                     click: () => app.quit()
                 }
             ];
@@ -126,11 +126,11 @@ export class SystemTrayManager {
             const categoryItem = this.currentContextMenu.getMenuItemById('currentCategory');
 
             if (windowItem) {
-                windowItem.label = `Current Window: ${currentWindow}`;
+                windowItem.label = `📱 ${isTracking ? currentWindow : 'Tracking Paused'}`;
             }
 
             if (categoryItem) {
-                categoryItem.label = `Category: ${currentCategory}`;
+                categoryItem.label = `🏷️ ${isTracking ? currentCategory : 'Tracking Paused'}`;
             }
 
             this.tray.setContextMenu(this.currentContextMenu);
